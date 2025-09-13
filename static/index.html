@@ -1,69 +1,172 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>AI Study Tutor</title>
-	<link rel="stylesheet" href="/static/styles.css?v=2">
-</head>
-<body>
-	<div class="app">
-		<aside class="sidebar">
-			<h2>Sessions</h2>
-			<ul id="sessions"></ul>
-		</aside>
-		<main class="chat">
-			<header class="chat-header">
-				<h1>AI Study Tutor <span id="rec-indicator" class="rec-indicator" style="display:none">● Recording</span>
-					<button id="settings-btn" class="settings-btn" title="Settings">⚙️</button>
-				</h1>
-			</header>
-			<div id="settings-modal" class="modal" style="display:none">
-				<div class="modal-content">
-					<h3>Settings</h3>
-					<label for="voice-select">Voice</label>
-					<select id="voice-select">
-						<option value="Gail-PlayAI">Gail-PlayAI</option>
-						<option value="Fritz-PlayAI">Fritz-PlayAI</option>
-						<option value="Arista-PlayAI">Arista-PlayAI</option>
-						<option value="Atlas-PlayAI">Atlas-PlayAI</option>
-						<option value="Quinn-PlayAI">Quinn-PlayAI</option>
-						<option value="Thunder-PlayAI">Thunder-PlayAI</option>
-					</select>
-					<label style="display:block;margin-top:10px"><input type="checkbox" id="reasoning-toggle"> Detailed reasoning (step-by-step)</label>
-					<div class="modal-actions">
-						<button id="settings-save">Save</button>
-						<button id="settings-cancel">Cancel</button>
-					</div>
-				</div>
-			</div>
-			<div id="messages" class="messages"></div>
-			<footer class="composer">
-				<input id="text-input" placeholder="Ask a question..." />
-				<button id="send-btn">Send</button>
-				<button id="voice-btn" title="Record voice">🎤</button>
-				<button id="upload-btn" title="Upload file">📎</button>
-				<span id="staged-file" class="staged-file" style="display:none"></span>
-				<input type="file" id="file-input" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webm,.wav,.mp3,.m4a,.ogg" style="display:none" />
-			</footer>
-		</main>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>AI Study Tutor</title>
+    <link rel="stylesheet" href="/static/styles.css?v=2" />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+  </head>
+  <body>
+    <div class="h-screen overflow-x-hide max-w-screen">
+      <div id="loader">
+        <img
+          src="https://github.githubassets.com/images/mona-loading-dark.gif"
+          alt="Loading..."
+          width="64"
+          height="64"
+        />
+        <div class="spinner">just a moment</div>
+      </div>
+      <div class="header p-2">
+		<nav class="navbar h-10 flex justify-between px-5 items-center top-2 shadow-black shadow-lg rounded-3xl p-6">
+        <a href="#" class="nav-logo font-bold text-3xl text-gray-600">MyLogo</a>
+        <ul class="nav-menu justify-center items-center flex gap-40 p-2">
+            <li class="nav-item">
+                <a href="#home" class="nav-link">Home</a>
+            </li>
+            <li class="nav-item">
+                <a href="#about" class="nav-link">About</a>
+            </li>
+            <li class="nav-item">
+                <a href="#services" class="nav-link">Services</a>
+            </li>
+            <li class="nav-item">
+                <a href="#contact" class="nav-link">Contact</a>
+            </li>
+        </ul>
+		<button class="bg-white rounded-2xl p-2 font-bold text-black">START LEARNING</button>
+        <div class="hamburger">
+            <span class="bar"></span>
+            <span class="bar"></span>
+            <span class="bar"></span>
+        </div>
+    </nav>
+        <h1 id="font-title" class="flex items-center pt-5 justify-center text-8xl">
+          AI Study Tutor
+        </h1>
+		<div class="w-full flex h-85 pl-5 pt-8">
+		<div class="left bg-gradient-to-r from-gray-950 to-purple-950 shadow-lg w-1/2 text-3xl p-5 flex items-center justify-center rounded-2xl text-white">
+			<span>hey! let's dive in to a bright future together and make yourself unstopable with <span id="font-title" class="text-5xl items-center flex justify-center">REAL-AI-STUDY-TUTOR</span></span>
+		</div>
+		<div class="right w-1/2"></div>
+		</div>
+      </div>
+    </div>
+	<div class="h-screen">
+		<section id="about">
+        <h2 class="font-bold text-8xl ">About Us</h2>
+        <p>This is the about section.</p>
+    </section>
 	</div>
+	<div class="h-screen">
+		<section id="services">
+        <h2 class="font-bold text-8xl ">Our Services</h2>
+        <p>This is the services section.</p>
+    </section>
+	</div>
+	<div class="h-screen">
+		<section id="contact">
+        <h2 class="font-bold text-8xl">Contact Us</h2>
+        <p>This is the contact section.</p>
+    </section>
+	</div>
+    <div class="app">
+      <aside class="sidebar">
+        <h2>Sessions</h2>
+        <ul id="sessions"></ul>
+      </aside>
+      <main class="chat">
+        <header class="chat-header">
+          <h1>
+            AI Study Tutor
+            <span id="rec-indicator" class="rec-indicator" style="display: none"
+              >● Recording</span
+            >
+            <button id="settings-btn" class="settings-btn" title="Settings">
+              ⚙️
+            </button>
+          </h1>
+        </header>
+        <div id="settings-modal" class="modal" style="display: none">
+          <div class="modal-content">
+            <h3>Settings</h3>
+            <label for="voice-select">Voice</label>
+            <select id="voice-select">
+              <option value="Gail-PlayAI">Gail-PlayAI</option>
+              <option value="Fritz-PlayAI">Fritz-PlayAI</option>
+              <option value="Arista-PlayAI">Arista-PlayAI</option>
+              <option value="Atlas-PlayAI">Atlas-PlayAI</option>
+              <option value="Quinn-PlayAI">Quinn-PlayAI</option>
+              <option value="Thunder-PlayAI">Thunder-PlayAI</option>
+            </select>
+            <label style="display: block; margin-top: 10px"
+              ><input type="checkbox" id="reasoning-toggle" /> Detailed
+              reasoning (step-by-step)</label
+            >
+            <div class="modal-actions">
+              <button id="settings-save">Save</button>
+              <button id="settings-cancel">Cancel</button>
+            </div>
+          </div>
+        </div>
+        <div id="messages" class="messages"></div>
+        <footer class="composer">
+          <input id="text-input" placeholder="Ask a question..." />
+          <button id="send-btn">Send</button>
+          <button id="voice-btn" title="Record voice">🎤</button>
+          <button id="upload-btn" title="Upload file">📎</button>
+          <span
+            id="staged-file"
+            class="staged-file"
+            style="display: none"
+          ></span>
+          <input
+            type="file"
+            id="file-input"
+            accept=".pdf,.docx,.txt,.png,.jpg,.jpeg,.webm,.wav,.mp3,.m4a,.ogg"
+            style="display: none"
+          />
+        </footer>
+      </main>
+    </div>
 
-	<script>
-		window.MathJax = {
-			tex: {
-				inlineMath: [['$', '$'], ['\\(', '\\)']],
-				displayMath: [['$$','$$'], ['\\[','\\]']],
-				processEscapes: true
-			},
-			svg: { fontCache: 'global' }
-		};
-	</script>
-	<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js" integrity="sha384-5Vt2KJkC0mP3gq6E2k4Y3o6iQmPpKcJg1CwEJrZ0VYcJpJr8n0x6KQ9f0tHk5R9b" crossorigin="anonymous"></script>
-	<script src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js" integrity="sha384-Ux3m8b1F1Qk1qJg8uVn6rX5i8fJqQ9Q0x1S6Qx2fWc7V9n2H8rXvWmJ0vC0pL3h2" crossorigin="anonymous"></script>
-	<script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"></script>
-	<script src="/static/main.js?v=3"></script>
-</body>
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [
+            ["$", "$"],
+            ["\\(", "\\)"],
+          ],
+          displayMath: [
+            ["$$", "$$"],
+            ["\\[", "\\]"],
+          ],
+          processEscapes: true,
+        },
+        svg: { fontCache: "global" },
+      };
+    </script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"
+      integrity="sha384-5Vt2KJkC0mP3gq6E2k4Y3o6iQmPpKcJg1CwEJrZ0VYcJpJr8n0x6KQ9f0tHk5R9b"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      src="https://cdn.jsdelivr.net/npm/dompurify@3.1.6/dist/purify.min.js"
+      integrity="sha384-Ux3m8b1F1Qk1qJg8uVn6rX5i8fJqQ9Q0x1S6Qx2fWc7V9n2H8rXvWmJ0vC0pL3h2"
+      crossorigin="anonymous"
+    ></script>
+    <script
+      async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js"
+    ></script>
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.13.0/gsap.min.js"
+      integrity="sha512-NcZdtrT77bJr4STcmsGAESr06BYGE8woZdSdEgqnpyqac7sugNO+Tr4bGwGF3MsnEkGKhU2KL2xh6Ec+BqsaHA=="
+      crossorigin="anonymous"
+      referrerpolicy="no-referrer"
+    ></script>
+    <script src="/static/main.js?v=3"></script>
+  </body>
 </html>
-
-
