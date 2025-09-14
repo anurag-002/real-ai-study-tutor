@@ -3,8 +3,9 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Document</title>
+    <title>AI Study Tutor</title>
     <link rel="stylesheet" href="/static/styles.css?v=2" />
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   </head>
   <body>
@@ -27,10 +28,10 @@
           <h1>
             AI Study Tutor
             <span id="rec-indicator" class="rec-indicator" style="display: none"
-              >● Recording</span
+              ><i class="fa-solid fa-record-vinyl"></i> Recording</span
             >
             <button id="settings-btn" class="settings-btn" title="Settings">
-              ⚙️
+              <i class="fa-solid fa-gear"></i>
             </button>
           </h1>
         </header>
@@ -59,9 +60,9 @@
         <div id="messages" class="messages"></div>
         <footer class="composer">
           <input id="text-input" placeholder="Ask a question..." />
-          <button id="send-btn">Send</button>
-          <button id="voice-btn" title="Record voice">🎤</button>
-          <button id="upload-btn" title="Upload file">📎</button>
+          <button id="send-btn"><i class="fa-solid fa-paper-plane"></i> Send</button>
+          <button id="voice-btn" title="Record voice"><i class="fa-solid fa-microphone"></i></button>
+          <button id="upload-btn" title="Upload file"><i class="fa-solid fa-link"></i></button>
           <span
             id="staged-file"
             class="staged-file"
