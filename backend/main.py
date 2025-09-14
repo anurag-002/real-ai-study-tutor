@@ -7,7 +7,7 @@ from typing import Optional, List, Dict, Any
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse, RedirectResponse, Response
+from fastapi.responses import JSONResponse, RedirectResponse, Response, FileResponse
 
 from .models import SendMessageRequest, SendMessageResponse, UploadFileResponse, HistoryResponse, ResetHistoryRequest
 from .db import init_db, append_message, get_history, reset_history_if_exists, ensure_session
@@ -255,6 +255,7 @@ async def root_redirect():
 async def favicon():
     # Avoid hanging requests for favicon; serve empty 204
     return Response(status_code=204)
+
 
 
 if __name__ == "__main__":
