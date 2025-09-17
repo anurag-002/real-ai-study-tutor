@@ -110,6 +110,46 @@
         </footer>
       </main>
     </div>
+    <div
+      class="cursor fixed top-0 left-0 w-[30px] h-[30px] border-2 border-white rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2 scale-100 transition-transform ease-in-out duration-150 z-[9999] shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+    ></div>
+        <script>
+      const cursor = document.querySelector(".cursor");
+
+      document.addEventListener("mousemove", (e) => {
+        cursor.style.top = e.clientY + "px";
+        cursor.style.left = e.clientX + "px";
+      });
+
+      document
+        .querySelectorAll("a, button, .nav-item, .nav-link")
+        .forEach((el) => {
+          el.addEventListener("mouseenter", () => {
+            cursor.classList.remove(
+              "scale-100",
+              "border-white",
+              "shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+            );
+            cursor.classList.add(
+              "scale-150",
+              "border-sky-400",
+              "shadow-[0_0_12px_rgba(56,189,248,0.8)]"
+            );
+          });
+          el.addEventListener("mouseleave", () => {
+            cursor.classList.remove(
+              "scale-150",
+              "border-sky-400",
+              "shadow-[0_0_12px_rgba(56,189,248,0.8)]"
+            );
+            cursor.classList.add(
+              "scale-100",
+              "border-white",
+              "shadow-[0_0_8px_rgba(255,255,255,0.6)]"
+            );
+          });
+        });
+    </script>
     <script>
       window.MathJax = {
         tex: {
@@ -146,6 +186,6 @@
       crossorigin="anonymous"
       referrerpolicy="no-referrer"
     ></script>
-    <script src="/static/main.js?v=3"></script>
+    <script src="/static/main.js?v=99"></script>
   </body>
 </html>

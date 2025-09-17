@@ -8,28 +8,8 @@ body {
   background: #19192b;
   color: #e7e7ea;
   position: relative;
-  cursor: none;
 }
 
-.cursor {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 30px;
-  height: 30px;
-  border: 2px solid #fff; /* white circle border */
-  border-radius: 50%;
-  pointer-events: none; /* prevent blocking clicks */
-  transform: translate(-50%, -50%) scale(1);
-  transition: transform 0.15s ease, border-color 0.15s ease;
-  z-index: 9999; /* always on top */
-}
-
-/* 🔹 Cursor grows when hovering over interactive elements */
-.cursor.active {
-  transform: translate(-50%, -50%) scale(1.8);
-  border-color: #38bdf8; /* tailwind sky-400 color */
-}
 @media (max-width: 768px) {
   body {
     height: max-content;
@@ -110,7 +90,6 @@ body {
 .sidebar li {
   padding: 8px 10px;
   border-radius: 8px;
-  cursor: pointer;
   color: #c7cbe0;
 }
 .sidebar li:hover {
@@ -144,7 +123,6 @@ body {
   color: #cfd7ff;
   border-radius: 6px;
   padding: 4px 8px;
-  cursor: pointer;
 }
 .modal {
   position: fixed;
@@ -269,7 +247,6 @@ body {
   border: 1px solid #2a2f45;
   background: #1a1f33;
   color: #cfd7ff;
-  cursor: pointer;
 }
 .composer button:hover {
   background: #242a44;

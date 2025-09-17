@@ -25,6 +25,71 @@ window.addEventListener('load', () => {
     }, 2000);
 });
 
+
+
+function initTiltCards() {
+  const tiltContainers = document.querySelectorAll(".tilt-container");
+
+  tiltContainers.forEach((container) => {
+    const card = container.querySelector(".tilt-card");
+    const rotateAmplitude = 12;
+    const scaleOnHover = 1.05;
+
+    let targetX = 0, targetY = 0;
+    let currentX = 0, currentY = 0;
+    let animationFrame;
+
+    function animate() {
+      // Lerp (ease) toward target
+      currentX += (targetX - currentX) * 0.1;
+      currentY += (targetY - currentY) * 0.1;
+
+      card.style.transform = `rotateX(${currentX}deg) rotateY(${currentY}deg) scale(${scaleOnHover})`;
+
+      animationFrame = requestAnimationFrame(animate);
+    }
+
+    container.addEventListener("mousemove", (e) => {
+      const rect = container.getBoundingClientRect();
+      const offsetX = e.clientX - rect.left - rect.width / 2;
+      const offsetY = e.clientY - rect.top - rect.height / 2;
+
+      targetX = (-offsetY / (rect.height / 2)) * rotateAmplitude;
+      targetY = (offsetX / (rect.width / 2)) * rotateAmplitude;
+
+      if (!animationFrame) animate();
+    });
+
+    container.addEventListener("mouseenter", () => {
+      card.style.transition = "transform 0.1s ease-out";
+      animationFrame = requestAnimationFrame(animate);
+    });
+
+    container.addEventListener("mouseleave", () => {
+      cancelAnimationFrame(animationFrame);
+      animationFrame = null;
+      card.style.transition = "transform 0.3s ease";
+      card.style.transform = "rotateX(0deg) rotateY(0deg) scale(1)";
+      targetX = 0;
+      targetY = 0;
+      currentX = 0;
+      currentY = 0;
+    });
+  });
+}
+
+document.addEventListener("DOMContentLoaded", initTiltCards);
+
+document.addEventListener("DOMContentLoaded", () => {
+  if (!document.querySelector(".cursor")) {
+    const cursorEl = document.createElement("div");
+    cursorEl.className =
+      "cursor fixed top-0 left-0 w-[30px] h-[30px] border-2 border-white rounded-full pointer-events-none -translate-x-1/2 -translate-y-1/2 scale-100 transition-transform ease-in-out duration-150 z-[9999] shadow-[0_0_8px_rgba(255,255,255,0.6)]";
+    document.body.appendChild(cursorEl);
+  }
+});
+
+
 // Configure marked when it's available
 function configureMarked() {
   if (window.marked) {
