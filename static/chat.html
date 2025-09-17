@@ -13,31 +13,6 @@
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
   </head>
   <body>
-    <div class="header p-2">
-    <nav
-      class="navbar md:h-10 h-5 flex justify-between px-5 items-center top-2 shadow-black shadow-lg rounded-3xl md:p-6 p-5"
-    >
-      <a href="/" class="nav-logo font-bold text-3xl text-gray-600">AI</a>
-      <ul
-        class="nav-menu justify-center items-center flex md:gap-40 gap-6 p-2 md:pl-0 pl-2"
-      >
-        <li class="nav-item hover:scale-110 transition-transform duration-300">
-          <a href="#home" class="nav-link">Home</a>
-        </li>
-        <li class="nav-item hover:scale-110 transition-transform duration-300">
-          <a href="#about" class="nav-link">About</a>
-        </li>
-        <li class="nav-item hover:scale-110 transition-transform duration-300">
-          <a href="#contact" class="nav-link">Contact</a>
-        </li>
-      </ul>
-      <div class="hamburger">
-        <span class="bar"></span>
-        <span class="bar"></span>
-        <span class="bar"></span>
-      </div>
-    </nav>
-    </div>
     <div class="app">
       <div id="loader">
         <img
@@ -48,8 +23,9 @@
         />
         <div class="spinner">just a moment</div>
       </div>
-      <aside class="sidebar">
-        <h2 class="p-5">Sessions</h2>
+      <aside class="sidebar flex pt-3">
+        <div class="p-2 border border-sm h-10 mt-1 ml-1 rounded-2xl"><i class="fa-solid fa-arrow-left"></i><a href="index.html "> home</a></div>
+        <h2 class="mt-10 pl-7 pt-2">Sessions</h2>
         <ul id="sessions"></ul>
       </aside>
       <main class="chat">

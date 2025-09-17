@@ -35,7 +35,7 @@
               <a href="#contact" class="nav-link">Contact</a>
             </li>
           </ul>
-          <a href="chat.html" class="bg-white rounded-2xl md:p-1.5 p-1 md:text-lg text-[10px] font-bold text-black hover:scale-110 transition-transform duration-300">
+          <a href="chat.html" class="rounded-2xl border border-sm border-white text-white md:p-1.5 p-1 md:text-lg text-[10px] font-bold text-black hover:scale-110 transition-transform duration-300">
             START LEARNING
           </a>
           <div class="hamburger">
@@ -111,6 +111,24 @@
        </div>
       </section>
     </div>
+    <div class="cursor"></div>
+    <script>
+  const cursor = document.querySelector(".cursor");
+
+  // follow mouse
+  document.addEventListener("mousemove", (e) => {
+    cursor.style.top = e.clientY + "px";
+    cursor.style.left = e.clientX + "px";
+  });
+
+  // grow cursor on links & buttons
+  const hoverTargets = document.querySelectorAll("a, button, .nav-item, .nav-link");
+
+  hoverTargets.forEach((el) => {
+    el.addEventListener("mouseenter", () => cursor.classList.add("active"));
+    el.addEventListener("mouseleave", () => cursor.classList.remove("active"));
+  });
+</script>
     <script>
       window.MathJax = {
         tex: {
