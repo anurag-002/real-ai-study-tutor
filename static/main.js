@@ -1,6 +1,240 @@
 let sessionId = null;
 const apiBase = "";
 
+// Check authentication on load
+function checkAuth() {
+  const token = localStorage.getItem('authToken');
+  if (!token) {
+    window.location.href = '/login';
+    return false;
+  }
+  return true;
+}
+
+// Get CSRF token from cookie
+function getCsrfToken() {
+  const name = 'csrftoken';
+  let cookieValue = null;
+  if (document.cookie && document.cookie !== '') {
+    const cookies = document.cookie.split(';');
+    for (let i = 0; i < cookies.length; i++) {
+      const cookie = cookies[i].trim();
+      if (cookie.substring(0, name.length + 1) === (name + '=')) {
+        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+        break;
+      }
+    }
+  }
+  return cookieValue;
+}
+
+// Get auth headers
+function getAuthHeaders() {
+  const token = localStorage.getItem('authToken');
+  const headers = {
+    'Authorization': `Token ${token}`
+  };
+  
+  // Add CSRF token for POST requests
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    headers['X-CSRFToken'] = csrfToken;
+  }
+  
+  return headers;
+}
+
+// Check auth and show username
+window.addEventListener('load', () => {
+  if (!checkAuth()) return;
+  
+  const username = localStorage.getItem('username');
+  if (username) {
+    const usernameEl = document.getElementById('current-username');
+    if (usernameEl) {
+      usernameEl.textContent = `(@${username})`;
+    }
+  }
+  
+  // Load saved session from localStorage or start new
+  const savedSessionId = localStorage.getItem('currentSessionId');
+  if (savedSessionId) {
+    sessionId = savedSessionId;
+    loadHistory();
+  }
+  
+  // Load sessions list
+  loadSessionsList();
+});
+
+// Load all chat sessions for sidebar
+async function loadSessionsList() {
+  try {
+    const res = await fetch(`${apiBase}/api/sessions`, {
+      headers: getAuthHeaders()
+    });
+    const data = await res.json();
+    
+    const sessionsEl = document.getElementById('sessions');
+    if (!sessionsEl) return;
+    
+    sessionsEl.innerHTML = '';
+    
+    if (data.sessions && data.sessions.length > 0) {
+      data.sessions.forEach(session => {
+        const li = document.createElement('li');
+        li.className = 'session-item';
+        
+        // Create preview text from first message
+        let preview = session.first_message || 'New chat';
+        if (preview.length > 40) {
+          preview = preview.substring(0, 40) + '...';
+        }
+        
+        const isActive = session.session_id === sessionId;
+        
+        li.innerHTML = `
+          <div class="session-preview ${isActive ? 'active' : ''}" data-session-id="${session.session_id}">
+            <div class="session-text">${escapeHtml(preview)}</div>
+            <div class="session-time">${formatDate(session.created_at)}</div>
+            <button class="delete-session-btn" title="Delete chat">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+        `;
+        
+        // Click to load this session
+        li.querySelector('.session-preview').addEventListener('click', (e) => {
+          if (!e.target.closest('.delete-session-btn')) {
+            loadSession(session.session_id);
+          }
+        });
+        
+        // Delete button
+        li.querySelector('.delete-session-btn').addEventListener('click', async (e) => {
+          e.stopPropagation();
+          if (confirm('Delete this chat? This cannot be undone.')) {
+            await deleteSession(session.session_id);
+          }
+        });
+        
+        sessionsEl.appendChild(li);
+      });
+    } else {
+      sessionsEl.innerHTML = '<li class="text-gray-400 pl-7">No previous chats</li>';
+    }
+  } catch (err) {
+    console.error('Failed to load sessions:', err);
+  }
+}
+
+// Load a specific session
+async function loadSession(sid) {
+  sessionId = sid;
+  localStorage.setItem('currentSessionId', sid);
+  messagesEl.innerHTML = '';
+  await loadHistory();
+  await loadSessionsList(); // Refresh to show active state
+}
+
+// Start a new chat
+async function startNewChat() {
+  try {
+    const res = await fetch(`${apiBase}/api/new-session`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
+      }
+    });
+    const data = await res.json();
+    
+    sessionId = data.session_id;
+    localStorage.setItem('currentSessionId', sessionId);
+    messagesEl.innerHTML = '';
+    await loadSessionsList();
+  } catch (err) {
+    console.error('Failed to create new session:', err);
+  }
+}
+
+// Delete a session
+async function deleteSession(sid) {
+  try {
+    const res = await fetch(`${apiBase}/api/delete-session`, {
+      method: 'POST',
+      headers: {
+        ...getAuthHeaders(),
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ session_id: sid })
+    });
+    
+    if (res.ok) {
+      // If we deleted the current session, start a new one
+      if (sid === sessionId) {
+        await startNewChat();
+      } else {
+        await loadSessionsList();
+      }
+    }
+  } catch (err) {
+    console.error('Failed to delete session:', err);
+  }
+}
+
+// Helper to escape HTML
+function escapeHtml(text) {
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+// Helper to format date
+function formatDate(isoStr) {
+  if (!isoStr) return '';
+  try {
+    const date = new Date(isoStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 1) return 'Just now';
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  } catch {
+    return '';
+  }
+}
+
+// Setup new chat button
+document.addEventListener('DOMContentLoaded', () => {
+  const newChatBtn = document.getElementById('new-chat-btn');
+  if (newChatBtn) {
+    newChatBtn.addEventListener('click', startNewChat);
+  }
+});
+
+// Logout function
+function handleLogout() {
+  const token = localStorage.getItem('authToken');
+  if (token) {
+    fetch(`${apiBase}/api/logout`, {
+      method: 'POST',
+      headers: getAuthHeaders()
+    }).finally(() => {
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('username');
+      localStorage.removeItem('currentSessionId');
+      window.location.href = '/login';
+    });
+  }
+}
+
 const messagesEl = document.getElementById("messages");
 const sessionsEl = document.getElementById("sessions");
 const inputEl = document.getElementById("text-input");
@@ -237,10 +471,10 @@ async function sendText() {
     if (sessionId) form.append("session_id", sessionId);
     form.append("file", stagedFile);
     form.append("user_note", text || "");
-    const headers = {};
+    const headers = getAuthHeaders();
     if (selVoice) headers["X-Voice"] = selVoice;
     headers["X-Reasoning"] = "true";
-    const res = await fetch(`${apiBase}/upload-file`, {
+    const res = await fetch(`${apiBase}/api/upload-file`, {
       method: "POST",
       headers,
       body: form,
@@ -254,13 +488,14 @@ async function sendText() {
       stagedFileEl.textContent = "";
     }
     loadHistory();
+    loadSessionsList(); // Refresh sessions sidebar
     return;
   }
 
-  const headers = { "Content-Type": "application/json" };
+  const headers = { "Content-Type": "application/json", ...getAuthHeaders() };
   if (selVoice) headers["X-Voice"] = selVoice;
   headers["X-Reasoning"] = "true";
-  const res = await fetch(`${apiBase}/send-message`, {
+  const res = await fetch(`${apiBase}/api/send-message`, {
     method: "POST",
     headers,
     body: JSON.stringify({
@@ -273,12 +508,16 @@ async function sendText() {
   sessionId = data.session_id;
   addMessage("ai", data.reply_text, data.reply_audio_url);
   loadHistory();
+  loadSessionsList(); // Refresh sessions sidebar
 }
 
 async function loadHistory() {
   if (!sessionId) return;
   const res = await fetch(
-    `${apiBase}/history?session_id=${encodeURIComponent(sessionId)}`
+    `${apiBase}/api/history?session_id=${encodeURIComponent(sessionId)}`,
+    {
+      headers: getAuthHeaders()
+    }
   );
   const data = await res.json();
   messagesEl.innerHTML = "";

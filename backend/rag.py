@@ -3,8 +3,18 @@ import json
 from typing import List, Dict, Any, Optional
 
 import numpy as np
-
 import faiss  # type: ignore
+
+# Import sentence transformers for real embeddings
+try:
+    from sentence_transformers import SentenceTransformer
+    EMBEDDING_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+    USE_REAL_EMBEDDINGS = True
+    EMBEDDING_DIM = 384  # all-MiniLM-L6-v2 dimension
+except ImportError:
+    EMBEDDING_MODEL = None
+    USE_REAL_EMBEDDINGS = False
+    EMBEDDING_DIM = 768  # fallback dimension
 
 
 class FaissStore:
@@ -23,9 +33,12 @@ class FaissStore:
     def _save(self) -> None:
         if self.index is None:
             return
-        faiss.write_index(self.index, self.index_path)
-        with open(self.meta_path, "w", encoding="utf-8") as f:
-            json.dump(self.metadatas, f)
+        try:
+            faiss.write_index(self.index, self.index_path)
+            with open(self.meta_path, "w", encoding="utf-8") as f:
+                json.dump(self.metadatas, f)
+        except Exception as e:
+            print(f"RAG: Failed to save index: {e}")
 
     def _load(self) -> None:
         if os.path.exists(self.index_path) and os.path.exists(self.meta_path):
@@ -33,9 +46,10 @@ class FaissStore:
                 self.index = faiss.read_index(self.index_path)
                 with open(self.meta_path, "r", encoding="utf-8") as f:
                     self.metadatas = json.load(f)
+                print(f"RAG: Loaded index with {self.index.ntotal} vectors")
                 return
-            except Exception:
-                # Fall back to new empty index on load failure
+            except Exception as e:
+                print(f"RAG: Failed to load index: {e}")
                 self.index = None
                 self.metadatas = []
         # Create empty index
@@ -52,26 +66,37 @@ class FaissStore:
         self.index.add(vectors_norm)
         self.metadatas.extend(metadatas)
         self._save()
+        print(f"RAG: Added {len(metadatas)} documents. Total: {self.index.ntotal}")
 
     def search(self, query: np.ndarray, k: int) -> List[Dict[str, Any]]:
         if self.index is None or self.index.ntotal == 0:
             return []
         q = (query / (np.linalg.norm(query) + 1e-8)).astype(np.float32)[None, :]
-        _, idxs = self.index.search(q, min(k, self.index.ntotal))
+        scores, idxs = self.index.search(q, min(k, self.index.ntotal))
         results: List[Dict[str, Any]] = []
-        for i in idxs[0]:
+        for i, score in zip(idxs[0], scores[0]):
             if 0 <= i < len(self.metadatas):
-                results.append(self.metadatas[i])
+                result = self.metadatas[i].copy()
+                result['score'] = float(score)
+                results.append(result)
         return results
 
 
-INDEX_STATE: Dict[str, Any] = {"store": None, "dim": 768, "dir": None}
+INDEX_STATE: Dict[str, Any] = {"store": None, "dim": EMBEDDING_DIM, "dir": None}
 
 
-def dummy_embed(text: str, dim: int = 768) -> np.ndarray:
-    # Deterministic pseudo-embedding (placeholder). Replace with real embeddings.
+def get_embedding(text: str) -> np.ndarray:
+    """Generate embeddings using sentence-transformers or fallback to dummy."""
+    if USE_REAL_EMBEDDINGS and EMBEDDING_MODEL:
+        try:
+            embedding = EMBEDDING_MODEL.encode(text, convert_to_numpy=True)
+            return embedding.astype(np.float32)
+        except Exception as e:
+            print(f"RAG: Embedding failed, using fallback: {e}")
+    
+    # Fallback to deterministic pseudo-embedding
     rng = np.random.default_rng(abs(hash(text)) % (2**32))
-    return rng.normal(0, 1, size=(dim,)).astype(np.float32)
+    return rng.normal(0, 1, size=(INDEX_STATE["dim"],)).astype(np.float32)
 
 
 def get_or_create_index(index_dir: str) -> FaissStore:
@@ -81,27 +106,42 @@ def get_or_create_index(index_dir: str) -> FaissStore:
         meta_path = os.path.join(index_dir, "metadatas.json")
         INDEX_STATE["store"] = FaissStore(dim=INDEX_STATE["dim"], index_path=index_path, meta_path=meta_path)
         INDEX_STATE["dir"] = index_dir
+        if USE_REAL_EMBEDDINGS:
+            print("RAG: Using real embeddings (all-MiniLM-L6-v2)")
+        else:
+            print("RAG: WARNING - Using dummy embeddings. Install sentence-transformers for better results.")
     return INDEX_STATE["store"]
 
 
 def upsert_documents(index: FaissStore, docs: List[Dict[str, Any]]):
+    """Add documents to the index with real embeddings."""
+    if not docs:
+        return
+    
     vectors = []
     metas = []
     for d in docs:
         text = d.get("text", "")
-        vectors.append(dummy_embed(text, dim=index.dim))
+        if not text or not text.strip():
+            continue
+        vectors.append(get_embedding(text))
         metas.append(d)
+    
     if vectors:
         index.add(np.vstack(vectors), metas)
 
 
 def search_similar_snippets(index: FaissStore, query_text: str, k: int = 3) -> List[str]:
-    q = dummy_embed(query_text, dim=index.dim)
+    """Search for similar text snippets using semantic similarity."""
+    q = get_embedding(query_text)
     results = index.search(q, k * 2)  # fetch extras then filter
     snippets: List[str] = []
+    
     for r in results:
         t = r.get("text", "") or ""
         src = (r.get("source") or "").lower()
+        score = r.get("score", 0.0)
+        
         if not t.strip():
             continue
         # Skip audio-derived or placeholder artifacts
@@ -109,9 +149,15 @@ def search_similar_snippets(index: FaissStore, query_text: str, k: int = 3) -> L
             continue
         if "placeholder" in t.lower():
             continue
+        
+        # Only include results with reasonable similarity scores
+        if USE_REAL_EMBEDDINGS and score < 0.3:  # Cosine similarity threshold
+            continue
+        
         snippets.append(t[:1200])
         if len(snippets) >= k:
             break
+    
     return snippets
 
 
@@ -124,8 +170,10 @@ def clear_index(index_dir: str) -> None:
             os.remove(path)
         if os.path.exists(meta):
             os.remove(meta)
-    except Exception:
-        pass
+        print("RAG: Index cleared successfully")
+    except Exception as e:
+        print(f"RAG: Error clearing index: {e}")
     INDEX_STATE["store"] = None
+
 
 

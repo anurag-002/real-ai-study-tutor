@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>AI Study Tutor</title>
     <link rel="stylesheet" href="/static/styles.css?v=2" />
-    <link rel="stylesheet" href="/static//responsive.css?v=2" />
+    <link rel="stylesheet" href="/static/responsive.css?v=2" />
     <link
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
@@ -23,18 +23,25 @@
         />
         <div class="spinner">just a moment</div>
       </div>
-      <aside class="sidebar flex pt-3">
+      <aside class="sidebar flex flex-col pt-3">
         <div class="p-2 border border-sm h-10 mt-1 ml-1 rounded-2xl"><i class="fa-solid fa-arrow-left"></i><a href="index.html "> home</a></div>
-        <h2 class="mt-10 pl-7 pt-2">Sessions</h2>
-        <ul id="sessions"></ul>
+        <h2 class="mt-4 pl-7 pt-2 font-semibold">Previous Chats</h2>
+        <button id="new-chat-btn" class="mt-2 mx-1 p-2 border rounded-2xl hover:bg-blue-500">
+          <i class="fa-solid fa-plus"></i> New Chat
+        </button>
+        <ul id="sessions" class="sessions-list mt-2"></ul>
       </aside>
       <main class="chat">
-        <header class="chat-header">
+       <header class="chat-header">
           <h1>
             AI Study Tutor
+            <span id="current-username" class="text-sm text-gray-300 ml-2"></span>
             <span id="rec-indicator" class="rec-indicator" style="display: none"
               ><i class="fa-solid fa-record-vinyl"></i> Recording</span
             >
+            <button id="logout-btn" class="logout-btn" title="Logout" onclick="handleLogout()">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
             <button id="settings-btn" class="settings-btn" title="Settings">
               <i class="fa-solid fa-gear"></i>
             </button>

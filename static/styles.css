@@ -139,6 +139,71 @@ body::after {
 .sidebar li:hover {
   background: #1a1d29;
 }
+.sessions-list {
+  list-style: none;
+  margin: 0;
+  padding: 0 8px;
+}
+.session-item {
+  margin-bottom: 8px;
+  padding: 0;
+}
+.session-preview {
+  padding: 12px;
+  border-radius: 8px;
+  background: #171a24;
+  cursor: pointer;
+  transition: all 0.2s;
+  border: 1px solid transparent;
+  position: relative;
+}
+.session-preview:hover {
+  background: #1f2230;
+  border-color: #2a2f45;
+}
+.session-preview.active {
+  background: #2a2f45;
+  border-color: #3d4563;
+}
+.session-text {
+  font-size: 14px;
+  color: #e7e7ea;
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding-right: 30px;
+}
+.session-time {
+  font-size: 11px;
+  color: #888;
+}
+.delete-session-btn {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: #888;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  opacity: 0;
+  transition: all 0.2s;
+}
+.session-preview:hover .delete-session-btn {
+  opacity: 1;
+}
+.delete-session-btn:hover {
+  background: #ff5e73;
+  color: #fff;
+}
+#new-chat-btn {
+  width: calc(100% - 16px);
+  margin-left: 8px;
+  margin-right: 8px;
+}
 .chat {
   flex: 1;
   display: flex;
