@@ -75,6 +75,18 @@ Static files are handled by WhiteNoise and collected to `/staticfiles/` during b
 
 ## Troubleshooting
 
+### Worker Timeout on Startup
+If you see `WORKER TIMEOUT` errors:
+- This is fixed in the latest config with `--timeout 300 --preload`
+- The app lazy-loads ML models to avoid blocking worker startup
+- First request may take 10-20 seconds to load models
+
+### Python Version Mismatch (Python 3.13 errors)
+If you see Python 3.13 in logs instead of 3.11:
+- Ensure `PYTHON_VERSION=3.11.9` is set in environment variables
+- Check `runtime.txt` contains `python-3.11.9`
+- Python 3.13 has compatibility issues with some ML libraries
+
 ### Build Fails: "No module named 'sentence_transformers'"
 - Ensure `sentence-transformers>=2.2.0` is in `requirements.txt`
 - Check build logs for memory issues (ML models are large)

@@ -3,18 +3,34 @@ import json
 from typing import List, Dict, Any, Optional
 
 import numpy as np
-import faiss  # type: ignore
 
-# Import sentence transformers for real embeddings
+# Try to import faiss, use fallback if not available
 try:
-    from sentence_transformers import SentenceTransformer
-    EMBEDDING_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
-    USE_REAL_EMBEDDINGS = True
-    EMBEDDING_DIM = 384  # all-MiniLM-L6-v2 dimension
+    import faiss
+    HAS_FAISS = True
 except ImportError:
-    EMBEDDING_MODEL = None
-    USE_REAL_EMBEDDINGS = False
-    EMBEDDING_DIM = 768  # fallback dimension
+    HAS_FAISS = False
+    print("WARNING: FAISS not available, RAG features will use in-memory fallback")
+
+# Lazy-load sentence transformers to avoid blocking worker startup
+EMBEDDING_MODEL = None
+USE_REAL_EMBEDDINGS = False  # Disabled by default for lighter deployments
+EMBEDDING_DIM = 384  # all-MiniLM-L6-v2 dimension
+
+
+def _get_embedding_model():
+    """Lazy-load the sentence transformer model."""
+    global EMBEDDING_MODEL, USE_REAL_EMBEDDINGS
+    if EMBEDDING_MODEL is None and os.getenv('USE_ML_EMBEDDINGS', 'false').lower() == 'true':
+        try:
+            from sentence_transformers import SentenceTransformer
+            EMBEDDING_MODEL = SentenceTransformer('all-MiniLM-L6-v2')
+            USE_REAL_EMBEDDINGS = True
+            print("RAG: Loaded real embeddings model")
+        except ImportError:
+            print("RAG: sentence-transformers not installed, using dummy embeddings")
+            USE_REAL_EMBEDDINGS = False
+    return EMBEDDING_MODEL
 
 
 class FaissStore:
@@ -22,15 +38,28 @@ class FaissStore:
         self.dim = dim
         self.index_path = index_path
         self.meta_path = meta_path
-        self.index: Optional[faiss.Index] = None
+        self.index: Optional[Any] = None
         self.metadatas: List[Dict[str, Any]] = []
+        self.vectors: List[np.ndarray] = []  # Fallback when no FAISS
         self._load()
 
-    def _create_index(self) -> faiss.Index:
-        # Cosine similarity via inner product on L2-normalized vectors
-        return faiss.IndexFlatIP(self.dim)
+    def _create_index(self):
+        if HAS_FAISS:
+            return faiss.IndexFlatIP(self.dim)
+        else:
+            return None  # Use in-memory fallback
 
     def _save(self) -> None:
+        if not HAS_FAISS:
+            # Save vectors and metadata without FAISS
+            try:
+                np.save(self.index_path + '.npy', np.array(self.vectors) if self.vectors else np.array([]))
+                with open(self.meta_path, "w", encoding="utf-8") as f:
+                    json.dump(self.metadatas, f)
+            except Exception as e:
+                print(f"RAG: Failed to save index: {e}")
+            return
+            
         if self.index is None:
             return
         try:
@@ -41,6 +70,25 @@ class FaissStore:
             print(f"RAG: Failed to save index: {e}")
 
     def _load(self) -> None:
+        if not HAS_FAISS:
+            # Load without FAISS
+            npy_path = self.index_path + '.npy'
+            if os.path.exists(npy_path) and os.path.exists(self.meta_path):
+                try:
+                    vectors = np.load(npy_path)
+                    self.vectors = list(vectors) if len(vectors) > 0 else []
+                    with open(self.meta_path, "r", encoding="utf-8") as f:
+                        self.metadatas = json.load(f)
+                    print(f"RAG: Loaded index with {len(self.vectors)} vectors (no FAISS)")
+                except Exception as e:
+                    print(f"RAG: Failed to load index: {e}")
+                    self.vectors = []
+                    self.metadatas = []
+            else:
+                self.vectors = []
+                self.metadatas = []
+            return
+            
         if os.path.exists(self.index_path) and os.path.exists(self.meta_path):
             try:
                 self.index = faiss.read_index(self.index_path)
@@ -58,6 +106,15 @@ class FaissStore:
         self._save()
 
     def add(self, vectors: np.ndarray, metadatas: List[Dict[str, Any]]):
+        if not HAS_FAISS:
+            # Fallback without FAISS
+            for vec in vectors:
+                self.vectors.append(vec)
+            self.metadatas.extend(metadatas)
+            self._save()
+            print(f"RAG: Added {len(metadatas)} documents. Total: {len(self.vectors)} (no FAISS)")
+            return
+            
         if self.index is None:
             self.index = self._create_index()
         # Normalize for cosine similarity
@@ -69,6 +126,25 @@ class FaissStore:
         print(f"RAG: Added {len(metadatas)} documents. Total: {self.index.ntotal}")
 
     def search(self, query: np.ndarray, k: int) -> List[Dict[str, Any]]:
+        if not HAS_FAISS:
+            # Fallback search without FAISS - simple cosine similarity
+            if not self.vectors:
+                return []
+            vectors_array = np.array(self.vectors)
+            # Normalize query
+            q = query / (np.linalg.norm(query) + 1e-8)
+            # Compute cosine similarity
+            similarities = np.dot(vectors_array, q)
+            # Get top k
+            top_indices = np.argsort(similarities)[::-1][:k]
+            results = []
+            for idx in top_indices:
+                if 0 <= idx < len(self.metadatas):
+                    result = self.metadatas[idx].copy()
+                    result['score'] = float(similarities[idx])
+                    results.append(result)
+            return results
+            
         if self.index is None or self.index.ntotal == 0:
             return []
         q = (query / (np.linalg.norm(query) + 1e-8)).astype(np.float32)[None, :]
@@ -87,9 +163,10 @@ INDEX_STATE: Dict[str, Any] = {"store": None, "dim": EMBEDDING_DIM, "dir": None}
 
 def get_embedding(text: str) -> np.ndarray:
     """Generate embeddings using sentence-transformers or fallback to dummy."""
-    if USE_REAL_EMBEDDINGS and EMBEDDING_MODEL:
+    model = _get_embedding_model()
+    if USE_REAL_EMBEDDINGS and model:
         try:
-            embedding = EMBEDDING_MODEL.encode(text, convert_to_numpy=True)
+            embedding = model.encode(text, convert_to_numpy=True)
             return embedding.astype(np.float32)
         except Exception as e:
             print(f"RAG: Embedding failed, using fallback: {e}")
@@ -106,7 +183,9 @@ def get_or_create_index(index_dir: str) -> FaissStore:
         meta_path = os.path.join(index_dir, "metadatas.json")
         INDEX_STATE["store"] = FaissStore(dim=INDEX_STATE["dim"], index_path=index_path, meta_path=meta_path)
         INDEX_STATE["dir"] = index_dir
-        if USE_REAL_EMBEDDINGS:
+        # Initialize model on first use
+        model = _get_embedding_model()
+        if USE_REAL_EMBEDDINGS and model:
             print("RAG: Using real embeddings (all-MiniLM-L6-v2)")
         else:
             print("RAG: WARNING - Using dummy embeddings. Install sentence-transformers for better results.")
