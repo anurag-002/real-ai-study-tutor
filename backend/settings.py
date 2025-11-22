@@ -99,7 +99,15 @@ STATICFILES_DIRS = [STATIC_DIR]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # WhiteNoise configuration for serving static files
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+# Use simpler storage backend that doesn't fail on missing source maps
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+    },
+}
 
 # Media files
 MEDIA_URL = '/audio/'
