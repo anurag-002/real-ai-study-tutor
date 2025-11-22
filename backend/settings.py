@@ -19,7 +19,7 @@ for directory in [DATA_DIR, STATIC_DIR, UPLOADS_DIR, AUDIO_DIR, INDEX_DIR, TEMPL
     directory.mkdir(parents=True, exist_ok=True)
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'django-insecure-dev-key-change-in-production')
+SECRET_KEY = os.getenv('DJANGO_SECRET_KEY', 'dev')
 
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
