@@ -4,12 +4,12 @@ set -o errexit
 
 echo "Installing dependencies..."
 pip install --upgrade pip
-pip install -r requirements-render.txt
+pip install -r requirements.txt
 
 echo "Collecting static files..."
 python manage.py collectstatic --no-input --clear
 
 echo "Running migrations..."
-python manage.py migrate
+python manage.py migrate --run-syncdb
 
 echo "Build complete!"

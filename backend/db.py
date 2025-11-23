@@ -103,7 +103,11 @@ def append_message(session_id: str, sender: str, content: str, audio_url: str, t
     
     # Update user stats if it's a user message
     if sender == 'user':
-        update_user_activity(session_id, 'message')
+        # Get user_id from session
+        cur.execute("SELECT user_id FROM sessions WHERE session_id = ?", (session_id,))
+        row = cur.fetchone()
+        if row and row['user_id']:
+            update_user_activity(row['user_id'], 'message')
 
 
 def get_history(session_id: str) -> List[Dict[str, Any]]:

@@ -11,6 +11,7 @@ from django.shortcuts import redirect, render
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.contrib.auth.decorators import login_required
+from django.conf import settings
 from rest_framework.decorators import api_view, parser_classes, permission_classes
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
@@ -101,9 +102,9 @@ def register_user(request):
         print(f"AUTH: Registration failed: {e}")
         import traceback
         traceback.print_exc()
-        error_msg = str(e) if DEBUG else 'Registration failed. Please try again.'
+        error_msg = str(e) if settings.DEBUG else 'Registration failed. Please try again.'
         return Response(
-            {'error': error_msg, 'debug': str(e) if DEBUG else None},
+            {'error': error_msg, 'debug': str(e) if settings.DEBUG else None},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
