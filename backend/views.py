@@ -101,8 +101,9 @@ def register_user(request):
         print(f"AUTH: Registration failed: {e}")
         import traceback
         traceback.print_exc()
+        error_msg = str(e) if DEBUG else 'Registration failed. Please try again.'
         return Response(
-            {'error': 'Registration failed. Please try again.'},
+            {'error': error_msg, 'debug': str(e) if DEBUG else None},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
