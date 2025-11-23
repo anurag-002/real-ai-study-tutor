@@ -95,21 +95,18 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# In development, also look in the static directory
-if DEBUG:
+# Serve static files directly from the static directory
+# In production, WhiteNoise will serve these files
+if not DEBUG:
+    # Production: serve from static directory directly
+    STATIC_ROOT = STATIC_DIR
+    WHITENOISE_USE_FINDERS = True
+    WHITENOISE_AUTOREFRESH = True
+else:
+    # Development: use normal Django static file handling
     STATICFILES_DIRS = [STATIC_DIR]
-
-# WhiteNoise configuration for serving static files
-STORAGES = {
-    "default": {
-        "BACKEND": "django.core.files.storage.FileSystemStorage",
-    },
-    "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
-    },
-}
+    STATIC_ROOT = BASE_DIR / "staticfiles"
 
 # Media files
 MEDIA_URL = '/audio/'

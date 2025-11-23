@@ -6,9 +6,6 @@ services:
     buildCommand: |
       pip install --upgrade pip
       pip install -r requirements.txt
-      mkdir -p staticfiles
-      cp -r static/* staticfiles/ || true
-      python manage.py collectstatic --no-input --clear
       python manage.py migrate
     startCommand: gunicorn backend.wsgi:application --bind 0.0.0.0:$PORT --workers 1 --timeout 120
     envVars:
