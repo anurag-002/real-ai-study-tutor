@@ -29,6 +29,11 @@ urlpatterns = [
     path('api/reset-index', views.reset_index, name='reset_index'),
     path('api/transcribe', views.transcribe, name='transcribe'),
     
+    # Scoreboard endpoints
+    path('api/scoreboard', views.get_scoreboard, name='scoreboard'),
+    path('api/user-stats', views.get_user_stats, name='user_stats'),
+    path('api/update-stats', views.update_stats, name='update_stats'),
+    
     # Public endpoints
     path('api/healthz', views.healthz, name='healthz'),
     

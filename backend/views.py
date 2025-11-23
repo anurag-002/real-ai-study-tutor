@@ -18,7 +18,9 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.authtoken.models import Token
 
-from .db import init_db, append_message, get_history, reset_history_if_exists, ensure_session, get_all_sessions, delete_session
+from .db import (init_db, append_message, get_history, reset_history_if_exists, ensure_session, 
+                get_all_sessions, delete_session, get_or_create_user_stats, update_user_activity,
+                get_leaderboard, get_user_rank)
 from .rag import get_or_create_index, search_similar_snippets, upsert_documents, clear_index
 from .groq_client import generate_text_with_context, transcribe_audio, extract_text_from_image
 from .tts import synthesize_tts
@@ -231,7 +233,9 @@ def send_message(request):
                 status=status.HTTP_400_BAD_REQUEST
             )
         
-        ensure_session(session_id)
+        # Get user_id from authenticated user
+        user_id = str(request.user.id) if request.user.is_authenticated else None
+        ensure_session(session_id, user_id)
         print(f"MAIN: Processing message: '{user_text[:50]}...'")
         
         # Generate AI response
@@ -413,6 +417,9 @@ def upload_file(request):
             
             append_message(session_id, sender="ai", content=reply_text, audio_url=None, timestamp=ts)
             
+            # Track file upload in stats
+            update_user_activity(session_id, 'file', 1)
+            
             return Response({
                 'session_id': session_id,
                 'reply_text': reply_text,
@@ -445,7 +452,9 @@ def get_session_history(request):
     if not session_id:
         return Response({'error': 'session_id is required'}, status=status.HTTP_400_BAD_REQUEST)
     
-    ensure_session(session_id)
+    # Get user_id from authenticated user
+    user_id = str(request.user.id) if request.user.is_authenticated else None
+    ensure_session(session_id, user_id)
     messages = get_history(session_id)
     return Response({
         'session_id': session_id,
@@ -456,8 +465,9 @@ def get_session_history(request):
 @api_view(['GET'])
 @permission_classes([IsAuthenticated])
 def list_sessions(request):
-    """List all chat sessions"""
-    sessions = get_all_sessions()
+    """List all chat sessions for the authenticated user"""
+    user_id = str(request.user.id) if request.user.is_authenticated else None
+    sessions = get_all_sessions(user_id)
     return Response({
         'sessions': sessions
     })
@@ -497,7 +507,8 @@ def delete_session_view(request):
 def create_new_session(request):
     """Create a new chat session"""
     new_session_id = str(uuid.uuid4())
-    ensure_session(new_session_id)
+    user_id = str(request.user.id) if request.user.is_authenticated else None
+    ensure_session(new_session_id, user_id)
     return Response({
         'session_id': new_session_id,
         'created_at': now_iso()
@@ -544,3 +555,37 @@ def root_redirect(request):
 def favicon(request):
     """Return empty response for favicon"""
     return HttpResponse(status=204)
+
+
+# Scoreboard endpoints
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_scoreboard(request):
+    """Get leaderboard data"""
+    limit = int(request.GET.get('limit', 10))
+    leaderboard = get_leaderboard(limit)
+    return Response({'leaderboard': leaderboard})
+
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def get_user_stats(request):
+    """Get current user's stats and rank"""
+    session_id = request.GET.get('session_id', 'default')
+    stats = get_user_rank(session_id)
+    return Response({'stats': stats})
+
+
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def update_stats(request):
+    """Manually update user stats (for file uploads, etc)"""
+    data = request.data
+    session_id = data.get('session_id', 'default')
+    activity_type = data.get('activity_type', 'message')  # 'message', 'file', or 'study_time'
+    value = data.get('value', 1)
+    
+    update_user_activity(session_id, activity_type, value)
+    stats = get_user_rank(session_id)
+    
+    return Response({'success': True, 'stats': stats})
