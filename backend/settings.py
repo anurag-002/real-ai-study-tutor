@@ -95,11 +95,13 @@ AUTH_PASSWORD_VALIDATORS = [
 
 # Static files (CSS, JavaScript, Images)
 STATIC_URL = '/static/'
-STATICFILES_DIRS = [STATIC_DIR]
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
+# In development, also look in the static directory
+if DEBUG:
+    STATICFILES_DIRS = [STATIC_DIR]
+
 # WhiteNoise configuration for serving static files
-# Use simpler storage backend that doesn't fail on missing source maps
 STORAGES = {
     "default": {
         "BACKEND": "django.core.files.storage.FileSystemStorage",
