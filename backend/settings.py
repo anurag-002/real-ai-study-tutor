@@ -78,10 +78,12 @@ TEMPLATES = [
 WSGI_APPLICATION = 'backend.wsgi.application'
 
 # Database - Using Django's default for auth
+# Store database in the data directory for persistence on Render
+DB_DIR = DATA_DIR if not DEBUG else BASE_DIR
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+        'NAME': DB_DIR / 'db.sqlite3',
     }
 }
 
